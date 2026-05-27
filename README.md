@@ -1,10 +1,12 @@
 # PasteCV
 
-Paste a resume. Get a clean, shareable portfolio link. No accounts, no fluff.
+Paste a resume. Get a clean, shareable portfolio link. Edit it inline. Pick a
+template. Done.
 
 PasteCV converts arbitrary resume text into structured JSON via an LLM, persists
-it to Postgres, and serves a server-rendered portfolio at `/[slug]`. Built as a
-proof of how far you can go with a single textarea and no auth.
+it to Postgres scoped to your account, and serves a server-rendered portfolio at
+`/[slug]`. You can switch between three visual templates and click-to-edit any
+field if you own the portfolio.
 
 ---
 
@@ -94,8 +96,9 @@ Visit http://localhost:3000.
 ```env
 GROQ_API_KEY=gsk_...                       # https://console.groq.com/keys
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi... # anon/public key (used by auth)
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...    # service_role, NOT anon
-NEXT_PUBLIC_BASE_URL=http://localhost:3000 # set to your Vercel URL in prod
+NEXT_PUBLIC_BASE_URL=http://localhost:3000 # set to your deployed URL in prod
 ```
 
 Optional:
@@ -106,20 +109,30 @@ GROQ_MODEL=llama-3.1-8b-instant            # override default Llama 3.3 70B
 
 ### Database
 
-Run once in the Supabase SQL Editor:
+Run [`supabase/migrations/001_owner_template_rls.sql`](./supabase/migrations/001_owner_template_rls.sql)
+once in the Supabase SQL Editor. It will:
 
-```sql
-create table portfolios (
-  id          uuid primary key default gen_random_uuid(),
-  slug        text unique not null,
-  name        text not null,
-  data        jsonb not null,
-  views       integer default 0,
-  created_at  timestamptz default now()
-);
+- drop the legacy `portfolios` table (phase 4 wipes pre-auth data — there's no
+  ownership info to back-fill)
+- recreate it with `owner_id`, `template`, `updated_at` and an `updated_at`
+  trigger
+- enable Row Level Security with policies: public `select`, owner-only
+  `insert/update/delete`
+- ensure the `admin_config` singleton table from phase 3 still exists
 
-create index on portfolios(slug);
-```
+### Auth setup
+
+PasteCV uses Supabase Auth. After applying the migration:
+
+1. In the Supabase dashboard → **Authentication → Providers**:
+   - **Email**: enable email/password sign-in. (Optional: turn off "Confirm
+     email" while developing locally so signups don't require an inbox round-trip.)
+   - **Google**: enable, paste your Google OAuth client ID + secret, and add
+     `https://<your-project>.supabase.co/auth/v1/callback` as an Authorized
+     redirect URI in the Google Cloud Console.
+2. In **Authentication → URL Configuration**, set the **Site URL** to your
+   `NEXT_PUBLIC_BASE_URL`. Add `http://localhost:3000` to the additional
+   redirect URLs while developing.
 
 ---
 
@@ -143,50 +156,66 @@ prompts without spinning up the whole app.
 ```
 src/
   app/
+    (auth)/
+      layout.tsx                Auth chrome (redirects authed users home)
+      login/page.tsx
+      signup/page.tsx
     api/
-      parse/route.ts            POST  → extract + persist + return { slug, url, data }
-      portfolio/[slug]/route.ts GET   → fetch row, increment views
-      export/route.ts           POST  → stubbed (501) for v2 PDF export
-    [slug]/page.tsx             RSC portfolio page with generateMetadata()
+      parse/route.ts            POST  → extract + persist + return { slug, url, data } (auth-gated)
+      portfolio/[slug]/route.ts GET/PATCH/DELETE row, increment views
+      auth/signout/route.ts     POST  → clear Supabase session cookie
+      admin/*                   Super-admin dashboard (legacy phase 3)
+    auth/callback/route.ts      OAuth + magic-link landing
+    [slug]/page.tsx             RSC portfolio (delegates to PortfolioRenderer)
+    dashboard/page.tsx          Per-user portfolio dashboard
     page.tsx                    Landing
-    not-found.tsx
-    layout.tsx                  Fonts + global metadata
-    globals.css                 Tailwind v4 + tokens + utilities
+    layout.tsx
+    globals.css
   components/
-    landing/ResumeInput.tsx     Terminal-style textarea card, ⌘↵ submit
+    auth/
+      AuthForm.tsx              Shared login/signup form (Google + email)
+      AuthNav.tsx                "Sign in / up" CTA or <UserMenu/> if authed
+      UserMenu.tsx
+    landing/ResumeInput.tsx
     portfolio/
-      Hero.tsx                  Name, title, summary, contact pills
-      SectionHeading.tsx        Numbered "01 · Skills" headings
-      SkillsGrid.tsx
-      ExperienceList.tsx        Timeline with hover-glow markers
-      ProjectCards.tsx          2-col glass cards
-      EducationList.tsx
-      ShareBar.tsx              Sticky bottom: copy link + view counter
+      PortfolioRenderer.tsx     Picks template, mounts <EditorProvider/>
+      editor/
+        EditorProvider.tsx      Context: data, template, autosave, dirty
+        EditableText.tsx        Click-to-edit text primitive
+        EditToolbar.tsx         Floating dock: edit, template, copy link
+        ListControls.tsx        Reusable add / move / delete buttons
+      templates/
+        LinearDark.tsx          Dark + lime, the original aesthetic
+        PaperLight.tsx          White, serif, print-clean
+        TerminalMono.tsx        green-on-black, mono, ASCII dividers
+      Hero.tsx, SkillsGrid.tsx, ExperienceList.tsx,
+      ProjectCards.tsx, EducationList.tsx, SectionHeading.tsx,
+      ShareBar.tsx              ← static phase-1 versions, kept for reference
     ui/
-      Button.tsx
-      Badge.tsx
-      Wordmark.tsx
+      Button.tsx, Badge.tsx, Wordmark.tsx
   lib/
     ai/
-      schema.ts                 Zod ResumeData
-      prompt.ts                 System prompt + buildUserPrompt()
-      client.ts                 callGroq() — OpenAI-compatible fetch wrapper
-      extractor.ts              extractResume(): string → ResumeData
-      test.ts                   tsx smoke runner with .env auto-load
+      schema.ts, prompt.ts, client.ts, extractor.ts, test.ts
+    auth/
+      client.ts                 Browser Supabase client (anon key)
+      server.ts                 SSR Supabase client (cookies)
+      session.ts                getCurrentUser() / requireUser()
     db/
-      client.ts                 Lazy Supabase singleton (service role)
-      slugify.ts                generateUniqueSlug(name) — DB-aware dedup
-      portfolios.ts             savePortfolio / getPortfolioBySlug
+      client.ts                 Service-role Supabase (RLS bypass)
+      slugify.ts
+      portfolios.ts             save / list / update / delete (owner-scoped)
+    admin/auth.ts               Legacy phase 3 super-admin password
+supabase/migrations/001_owner_template_rls.sql
 ```
 
 ---
 
 ## API contract
 
-### `POST /api/parse`
+### `POST /api/parse` *(auth required)*
 
 ```jsonc
-// Request
+// Request — must be made by a signed-in user (cookie-based session)
 { "resumeText": "<plain text resume, >= 50 chars>" }
 ```
 
@@ -202,7 +231,25 @@ src/
 | Status | Reason                                       |
 | -----: | -------------------------------------------- |
 |    400 | Body not JSON, or `resumeText` < 50 chars    |
+|    401 | No active Supabase session                   |
 |    500 | LLM failure, DB failure, or schema mismatch  |
+
+### `PATCH /api/portfolio/[slug]` *(owner required)*
+
+```jsonc
+// Request — any subset
+{
+  "data": { /* full ResumeData; validated via Zod */ },
+  "template": "linear-dark" | "paper-light" | "terminal-mono"
+}
+```
+
+Returns the updated row on success. `401` if unauthenticated, `404` if the slug
+doesn't exist or you aren't the owner.
+
+### `DELETE /api/portfolio/[slug]` *(owner required)*
+
+Removes the portfolio. `404` if not yours.
 
 ### `GET /api/portfolio/[slug]`
 
@@ -298,13 +345,19 @@ personal traffic, add a queue or move to a paid tier.
 
 ## Roadmap
 
-Not in v1:
+Shipped in phase 4:
+
+- Supabase Auth (email/password + Google OAuth)
+- Per-user `/dashboard`
+- Inline edit-in-place on the portfolio page (owner-only)
+- Three templates: `linear-dark`, `paper-light`, `terminal-mono`
+- Owner-only template switcher
+
+Not yet:
 
 - PDF / DOCX upload (route, `pdf-parse` + `mammoth` on the server)
-- Auth via Supabase (Google + magic link)
-- Per-user dashboard with edit / delete / regenerate
 - PDF export (`/api/export` currently 501)
-- Multiple themes
+- AI-assisted "rewrite this bullet" inline action
 - Rate limiting / abuse controls
 - OG image generation per portfolio
 

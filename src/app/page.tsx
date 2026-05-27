@@ -1,7 +1,13 @@
 import { ResumeInput } from "@/components/landing/ResumeInput";
 import { Wordmark } from "@/components/ui/Wordmark";
+import { AuthNav } from "@/components/auth/AuthNav";
+import { getCurrentUser } from "@/lib/auth/session";
 
-export default function LandingPage() {
+export const dynamic = "force-dynamic";
+
+export default async function LandingPage() {
+	const user = await getCurrentUser();
+
 	return (
 		<main className="relative min-h-screen overflow-hidden">
 			<div className="absolute inset-0 bg-line-grid opacity-60 pointer-events-none" />
@@ -10,10 +16,7 @@ export default function LandingPage() {
 
 			<header className="relative z-10 max-w-6xl mx-auto px-6 pt-8 flex items-center justify-between">
 				<Wordmark />
-				<div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/10 text-[11px] text-white/60 font-mono">
-					<span className="status-dot" />
-					LIVE · v1.0
-				</div>
+				<AuthNav />
 			</header>
 
 			<section className="relative z-10 max-w-3xl mx-auto px-6 pt-20 pb-12 text-center">
@@ -36,7 +39,7 @@ export default function LandingPage() {
 
 			<section className="relative z-10 max-w-3xl mx-auto px-6 pb-20">
 				<div className="rise-in-delay-3">
-					<ResumeInput />
+					<ResumeInput isAuthed={!!user} />
 				</div>
 			</section>
 

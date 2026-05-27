@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowRight, Sparkles, AlertCircle } from "lucide-react";
+import { ArrowRight, Sparkles, AlertCircle, Lock } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
 const PLACEHOLDER = `Jane Cooper
@@ -35,7 +36,11 @@ const SAMPLE = PLACEHOLDER;
 
 const MIN_CHARS = 50;
 
-export function ResumeInput() {
+interface ResumeInputProps {
+	isAuthed: boolean;
+}
+
+export function ResumeInput({ isAuthed }: ResumeInputProps) {
 	const router = useRouter();
 	const [text, setText] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -43,10 +48,19 @@ export function ResumeInput() {
 
 	const charCount = text.trim().length;
 	const isTooShort = charCount > 0 && charCount < MIN_CHARS;
-	const canSubmit = charCount >= MIN_CHARS && !loading;
+	const canSubmit = charCount >= MIN_CHARS && !loading && isAuthed;
 
 	async function handleSubmit() {
-		if (!canSubmit) return;
+		if (charCount < MIN_CHARS || loading) return;
+		if (!isAuthed) {
+			try {
+				sessionStorage.setItem("pastecv:pending-resume", text);
+			} catch {
+				// no-op (private mode etc.)
+			}
+			router.push("/login?next=" + encodeURIComponent("/"));
+			return;
+		}
 		setLoading(true);
 		setError(null);
 		try {
@@ -56,6 +70,15 @@ export function ResumeInput() {
 				body: JSON.stringify({ resumeText: text }),
 			});
 			const json = await res.json();
+			if (res.status === 401) {
+				try {
+					sessionStorage.setItem("pastecv:pending-resume", text);
+				} catch {
+					// no-op
+				}
+				router.push("/login?next=" + encodeURIComponent("/"));
+				return;
+			}
 			if (!res.ok) {
 				setError(json.error ?? "Something went wrong");
 				setLoading(false);
@@ -68,6 +91,19 @@ export function ResumeInput() {
 			setLoading(false);
 		}
 	}
+
+	useEffect(() => {
+		if (!isAuthed) return;
+		try {
+			const pending = sessionStorage.getItem("pastecv:pending-resume");
+			if (pending) {
+				setText(pending);
+				sessionStorage.removeItem("pastecv:pending-resume");
+			}
+		} catch {
+			// no-op
+		}
+	}, [isAuthed]);
 
 	function loadSample() {
 		setText(SAMPLE);
@@ -146,18 +182,43 @@ export function ResumeInput() {
 			)}
 
 			<div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
-				<Button
-					onClick={handleSubmit}
-					loading={loading}
-					disabled={!canSubmit}
-					icon={<ArrowRight className="size-4" />}
-					className="w-full sm:w-auto sm:min-w-[260px]"
-				>
-					{loading ? "Generating portfolio…" : "Generate my portfolio"}
-				</Button>
-				<p className="text-xs text-white/40 sm:ml-2">
-					Free · No sign-up · ~12s to build
-				</p>
+				{isAuthed ? (
+					<>
+						<Button
+							onClick={handleSubmit}
+							loading={loading}
+							disabled={!canSubmit}
+							icon={<ArrowRight className="size-4" />}
+							className="w-full sm:w-auto sm:min-w-[260px]"
+						>
+							{loading ? "Generating portfolio…" : "Generate my portfolio"}
+						</Button>
+						<p className="text-xs text-white/40 sm:ml-2">
+							Free · ~12s to build · Edit anytime
+						</p>
+					</>
+				) : (
+					<>
+						<Button
+							onClick={handleSubmit}
+							disabled={charCount < MIN_CHARS}
+							icon={<Lock className="size-4" />}
+							className="w-full sm:w-auto sm:min-w-[260px]"
+						>
+							Sign in to generate
+						</Button>
+						<p className="text-xs text-white/40 sm:ml-2">
+							New here?{" "}
+							<Link
+								href="/signup"
+								className="text-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"
+							>
+								Create an account
+							</Link>{" "}
+							— takes 10 seconds.
+						</p>
+					</>
+				)}
 			</div>
 
 		</div>

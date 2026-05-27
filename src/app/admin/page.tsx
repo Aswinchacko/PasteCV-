@@ -7,7 +7,7 @@ import {
 	ArrowUpRight,
 } from "lucide-react";
 import { isAdminAuthedCached } from "@/lib/admin/auth";
-import { listPortfoliosFull } from "@/lib/db/portfolios";
+import { DEFAULT_TEMPLATE, listPortfoliosFull } from "@/lib/db/portfolios";
 import { StatCard } from "@/components/admin/StatCard";
 import { TimelineChart } from "@/components/admin/TimelineChart";
 import { TopPerformers } from "@/components/admin/TopPerformers";
@@ -36,6 +36,7 @@ export default async function AdminOverviewPage() {
 		name: r.name,
 		views: r.views ?? 0,
 		created_at: r.created_at,
+		template: r.template ?? DEFAULT_TEMPLATE,
 		title: r.data?.title ?? null,
 		email: r.data?.contact?.email ?? null,
 	}));

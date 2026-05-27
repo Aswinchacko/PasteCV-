@@ -1,10 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { extractResume } from "@/lib/ai/extractor";
 import { savePortfolio } from "@/lib/db/portfolios";
+import { getCurrentUser } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+	const user = await getCurrentUser();
+	if (!user) {
+		return NextResponse.json(
+			{ error: "Authentication required", code: "auth_required" },
+			{ status: 401 },
+		);
+	}
+
 	let body: unknown;
 	try {
 		body = await req.json();
@@ -29,7 +39,7 @@ export async function POST(req: NextRequest) {
 
 	try {
 		const resumeData = await extractResume(resumeText);
-		const slug = await savePortfolio(resumeData);
+		const slug = await savePortfolio(resumeData, user.id);
 		const base =
 			process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/+$/, "") ??
 			"http://localhost:3000";
