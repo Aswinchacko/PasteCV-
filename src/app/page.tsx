@@ -17,11 +17,6 @@ export default function LandingPage() {
 			</header>
 
 			<section className="relative z-10 max-w-3xl mx-auto px-6 pt-20 pb-12 text-center">
-				<div className="rise-in inline-flex items-center gap-2 px-3 py-1.5 mb-8 rounded-full bg-white/[0.03] border border-white/10 text-[11px] text-white/70 font-mono tracking-tight">
-					<span className="size-1.5 rounded-full bg-[var(--color-accent)]" />
-					Built on Groq · Llama 3.3
-				</div>
-
 				<h1 className="rise-in-delay-1 text-5xl sm:text-6xl md:text-7xl font-semibold tracking-[-0.04em] leading-[0.98]">
 					Your resume.
 					<br />
