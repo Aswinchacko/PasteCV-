@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowRight, Sparkles, AlertCircle, Lock } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
 const PLACEHOLDER = `Jane Cooper
@@ -205,17 +204,11 @@ export function ResumeInput({ isAuthed }: ResumeInputProps) {
 							icon={<Lock className="size-4" />}
 							className="w-full sm:w-auto sm:min-w-[260px]"
 						>
-							Sign in to generate
+							Sign in with Google to generate
 						</Button>
 						<p className="text-xs text-white/40 sm:ml-2">
-							New here?{" "}
-							<Link
-								href="/signup"
-								className="text-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"
-							>
-								Create an account
-							</Link>{" "}
-							— takes 10 seconds.
+							One-click sign-in with Google. We&apos;ll bring you right back
+							here with your resume still pasted.
 						</p>
 					</>
 				)}

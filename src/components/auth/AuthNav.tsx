@@ -11,20 +11,12 @@ export async function AuthNav() {
 
 	if (!user) {
 		return (
-			<div className="flex items-center gap-2">
-				<Link
-					href="/login"
-					className="h-9 inline-flex items-center px-3 rounded-full text-[13px] text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors"
-				>
-					Sign in
-				</Link>
-				<Link
-					href="/signup"
-					className="h-9 inline-flex items-center px-3.5 rounded-full text-[13px] font-medium bg-[var(--color-accent)] text-ink-950 hover:bg-[var(--color-accent-soft)] transition-colors"
-				>
-					Sign up
-				</Link>
-			</div>
+			<Link
+				href="/login"
+				className="h-9 inline-flex items-center gap-2 px-3.5 rounded-full text-[13px] font-medium bg-[var(--color-accent)] text-ink-950 hover:bg-[var(--color-accent-soft)] transition-colors"
+			>
+				Sign in with Google
+			</Link>
 		);
 	}
 
