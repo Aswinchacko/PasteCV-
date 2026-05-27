@@ -62,6 +62,25 @@
 	animation: fadein 1.4s ease-out both;
 }
 
+@utility fade-in-fast {
+	animation: fadein 0.2s ease-out both;
+}
+
+@utility slide-in-right {
+	animation: slidein-right 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slidein-right {
+	0% {
+		opacity: 0;
+		transform: translateX(24px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
 @keyframes rise {
 	0% {
 		opacity: 0;
