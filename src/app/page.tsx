@@ -2,10 +2,26 @@ import { ResumeInput } from "@/components/landing/ResumeInput";
 import { Wordmark } from "@/components/ui/Wordmark";
 import { AuthNav } from "@/components/auth/AuthNav";
 import { getCurrentUser } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function LandingPage() {
+interface LandingPageProps {
+	searchParams?: Promise<{
+		code?: string;
+		next?: string;
+	}>;
+}
+
+export default async function LandingPage({ searchParams }: LandingPageProps) {
+	const sp = await searchParams;
+	if (sp?.code) {
+		const next = sp.next && sp.next.startsWith("/") ? sp.next : "/";
+		redirect(
+			`/auth/callback?code=${encodeURIComponent(sp.code)}&next=${encodeURIComponent(next)}`,
+		);
+	}
+
 	const user = await getCurrentUser();
 
 	return (

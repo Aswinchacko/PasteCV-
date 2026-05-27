@@ -33,6 +33,9 @@ export function AuthForm({ mode }: AuthFormProps) {
 	const router = useRouter();
 	const params = useSearchParams();
 	const nextParam = params.get("next") ?? "/";
+	const siteUrl =
+		process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/+$/, "") ??
+		(typeof window !== "undefined" ? window.location.origin : "");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [busy, setBusy] = useState<"google" | "email" | null>(null);
@@ -61,7 +64,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 				email,
 				password,
 				options: {
-					emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextParam)}`,
+					emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(nextParam)}`,
 				},
 			});
 			if (error) throw error;
@@ -89,7 +92,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 			const { error } = await sb.auth.signInWithOAuth({
 				provider: "google",
 				options: {
-					redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextParam)}`,
+					redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(nextParam)}`,
 				},
 			});
 			if (error) throw error;
