@@ -14,7 +14,7 @@ export default async function LandingPage() {
 			<div className="absolute inset-x-0 top-0 h-[520px] bg-gradient-to-b from-[var(--color-accent)]/[0.06] via-transparent to-transparent pointer-events-none" />
 			<div className="absolute top-[-200px] left-1/2 -translate-x-1/2 size-[600px] rounded-full bg-[var(--color-accent)]/10 blur-[120px] pointer-events-none" />
 
-			<header className="relative z-10 max-w-6xl mx-auto px-6 pt-8 flex items-center justify-between">
+			<header className="relative z-30 max-w-6xl mx-auto px-6 pt-8 flex items-center justify-between">
 				<Wordmark />
 				<AuthNav />
 			</header>

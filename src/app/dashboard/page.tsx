@@ -17,7 +17,7 @@ export default async function DashboardPage() {
 			<div className="absolute inset-0 bg-line-grid opacity-30 pointer-events-none" />
 			<div className="absolute top-[-200px] left-1/2 -translate-x-1/2 size-[600px] rounded-full bg-[var(--color-accent)]/[0.06] blur-[120px] pointer-events-none" />
 
-			<header className="relative z-10 max-w-5xl mx-auto px-6 pt-8 flex items-center justify-between">
+			<header className="relative z-30 max-w-5xl mx-auto px-6 pt-8 flex items-center justify-between">
 				<Wordmark />
 				<AuthNav />
 			</header>
