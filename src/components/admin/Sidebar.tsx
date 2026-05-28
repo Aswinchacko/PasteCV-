@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
 	LayoutDashboard,
 	Users,
+	FileText,
 	Settings,
 	ExternalLink,
 } from "lucide-react";
@@ -12,7 +13,8 @@ import { Wordmark } from "@/components/ui/Wordmark";
 
 const nav = [
 	{ href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
-	{ href: "/admin/portfolios", label: "Portfolios", icon: Users, exact: false },
+	{ href: "/admin/portfolios", label: "Portfolios", icon: FileText, exact: false },
+	{ href: "/admin/users", label: "Users", icon: Users, exact: false },
 	{ href: "/admin/settings", label: "Settings", icon: Settings, exact: false },
 ];
 
